@@ -22,7 +22,6 @@ function App() {
         const res =  vm.getString(resolvedHandle)
         setEvalResult(res)
         resolvedHandle.dispose()
-
       } catch (err) {
         console.log("eval error:", err)
         setEvalResult(err)
