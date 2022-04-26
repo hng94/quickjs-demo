@@ -1,3 +1,5 @@
+import { Client, ClientArgs } from "@everestsystems/kernel";
+
 const registerEverestFn = (vm: any) => {
     const log = vm.newFunction("log", (p: any) => {
         const s = vm.getString(p);
@@ -14,7 +16,14 @@ const registerEverestFn = (vm: any) => {
         promise.settled.then(vm.runtime.executePendingJobs)
         return promise.handle
     })
+
+    const clientHandle = vm.newObject('Client', () => {
+        return Client
+    })
+    
     const _everest = vm.newObject();
+    vm.setProp(_everest, 'Client', clientHandle)
+    clientHandle.dispose()
     vm.setProp(_everest, "log", log);
     log.dispose();
     vm.setProp(_everest, "getData", fetchHandle);

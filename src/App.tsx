@@ -1,30 +1,31 @@
 import React, { useEffect } from "react"
 import "./App.css"
 import { newQuickJSWASMModule } from "quickjs-emscripten"
-import registerEverestFn from "./everestFn"
-
+import { Arena } from "quickjs-emscripten-sync"
+import { io } from "socket.io-client";
 function App() {
   const [evalResult, setEvalResult] = React.useState<any>(undefined)
   const handleEval = React.useCallback(async () => {
     const wasmModule = await newQuickJSWASMModule()
     try {
       	const vm = wasmModule.newContext()
-        registerEverestFn(vm)
-        const result = vm.evalCode(`(async () => {
-          const response = await everest.getData();
-          everest.log(response)
-          return response;
-        })()`)
-        const promiseHandle = vm.unwrapResult(result)
-        const resolvedResult = await vm.resolvePromise(promiseHandle)
-        promiseHandle.dispose()
-        const resolvedHandle = vm.unwrapResult(resolvedResult)
-        const res =  vm.getString(resolvedHandle)
-        setEvalResult(res)
-        resolvedHandle.dispose()
+        const arena = new Arena(vm, { isMarshalable: true });
+        arena.expose({
+          console: {
+            log: console.log
+          },
+          io
+        });
+        arena.evalCode(`
+          const socket = io('ws://localhost:4000');
+          socket.on("msg", (arg) => {
+            console.log(arg); 
+          });
+          socket.emit("msg", "hi server")
+        `); // run console.log
       } catch (err) {
         console.log("eval error:", err)
-        setEvalResult(err)
+        setEvalResult(JSON.stringify(err))
       }
   }, [setEvalResult])
   useEffect(() => {
